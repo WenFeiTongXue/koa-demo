@@ -14,4 +14,7 @@ router.post('/login',userController.login)
 //获取用户信息
 router.post('/getUserInfo',userController.getUserInfo)
 
+//修改
+router.post('/updateUserInfo',userController.update)
+
 module.exports = router;

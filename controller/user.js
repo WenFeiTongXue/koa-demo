@@ -7,7 +7,8 @@ const Sequelize = db.sequelize
 //引入数据表模型
 const user = Sequelize.import('../module/user')
 //自动创建表
-user.sync({ force: false }); 
+// user.sync({ force: false }); 
+user.sync({ alter: true }); 
 
 //引入jwt做token验证
 const jwt = require('jsonwebtoken')
@@ -28,11 +29,21 @@ class userModule {
           mobileNo: data.mobileNo
         })
     }
+    static async userUpdate(obj) {
+        return await obj.save()
+    }
 
     static async getUserInfo(mobileNo) {
         return await user.findOne({
             where: {
                 mobileNo
+            }
+        })
+    }
+    static async getUserById(userId) {
+        return await user.findOne({
+            where: {
+                userId
             }
         })
     }
@@ -78,10 +89,35 @@ class userController {
         }
     }
   }
+  //修改资料
+  static async update(ctx) {
+    const req = ctx.request.body;
+    if (req.userId) {
+        try {
+            const query = await userModule.getUserById(req.userId);
+            Object.keys(req).forEach(key => {
+                query[key] = req[key]
+            })
+            await userModule.userUpdate(query)
+            let data = await userModule.getUserById(req.userId)
+            ctx.response.status = 200;
+            ctx.body = {
+                code: 1,
+                desc: '更新成功',
+                userInfo: data.dataValues
+            }
+        } catch (error) {
+            ctx.response.status = 416;
+            ctx.body = {
+                code: -1,
+                desc: '参数不齐全'
+            }
+        }
+    }
+  }
   //密码登陆
   static async login(ctx) {
     const req = ctx.request.body;
-    console.log('login', req)
     if (!req.mobileNo || !req.password) {
         return ctx.body = {
             code: '-1',
@@ -89,7 +125,6 @@ class userController {
         }
     } else {
         const data = await userModule.getUserInfo(req.mobileNo);
-        console.log('data',data)
         if (data) {
             if (data.password === req.password) {
                 //生成token，验证登录有效期
@@ -97,12 +132,7 @@ class userController {
                     user: req.mobileNo,
                     passWord: req.password
                 }, 'wenfei', { expiresIn: expireTime });
-                const info = {
-                    createdAt: data.createdAt,
-                    updatedAt: data.updatedAt,
-                    mobileNo: data.mobileNo,
-                    userId: data.userId
-                }
+                const info = data.dataValues
                 return ctx.body = {
                     code: '0',
                     token: token,
@@ -138,12 +168,7 @@ class userController {
             } else {
                 let data = await userModule.getUserInfo(req.mobileNo);
                 if (req.mobileNo == data.mobileNo) {
-                    const info = {
-                        createdAt: data.createdAt,
-                        updatedAt: data.updatedAt,
-                        mobileNo: data.mobileNo,
-                        userId: data.userId
-                    };
+                    const info = data.dataValues;
                     return ctx.body = {
                         code: '0',
                         userInfo: info,
