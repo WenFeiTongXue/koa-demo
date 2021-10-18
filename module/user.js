@@ -3,7 +3,7 @@ module.exports = function(sequelize,DataTypes){
       'user',
       {
           userId:{
-              type: DataTypes.STRING,
+              type: DataTypes.STRING(64),
               primaryKey: true,
               allowNull: true,
           },
@@ -37,6 +37,11 @@ module.exports = function(sequelize,DataTypes){
             type: DataTypes.DATE,
             field: 'updatedAt'
           },
+          roles: {
+            type: DataTypes.STRING,
+            field: 'roles',
+            defaultValue: "user"
+          }
       },
       {
           timestamps: true
