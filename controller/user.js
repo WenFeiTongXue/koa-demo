@@ -16,7 +16,7 @@ const jwt = require('jsonwebtoken')
 const tools = require('../public/tool')
 
 //统一设置token有效时间  为了方便观察，设为10s
-const expireTime = '10s'
+const expireTime = '60s'
 const uuid = require('node-uuid');
 
 //数据库操作类
@@ -96,7 +96,7 @@ class userController {
                 const token = jwt.sign({
                     user: req.mobileNo,
                     passWord: req.password
-                }, 'wemfei', { expiresIn: expireTime });
+                }, 'wenfei', { expiresIn: expireTime });
                 const info = {
                     createdAt: data.createdAt,
                     updatedAt: data.updatedAt,
@@ -106,7 +106,7 @@ class userController {
                 return ctx.body = {
                     code: '0',
                     token: token,
-                    userInfo: JSON.stringify(info),
+                    userInfo: info,
                     desc: '登陆成功'
                 }
             } else {
@@ -146,7 +146,7 @@ class userController {
                     };
                     return ctx.body = {
                         code: '0',
-                        userInfo: JSON.stringify(info),
+                        userInfo: info,
                         desc: '获取用户信息成功'
                     }
                 }
@@ -154,14 +154,14 @@ class userController {
         } catch (error) {
             ctx.status = 401;
             return ctx.body = {
-                code: '-1',
+                code: '401',
                 desc: '登陆过期，请重新登陆'
             }
         }
     }else{
         ctx.status = 401;
         return ctx.body = {
-            code: '-1',
+            code: '401',
             desc: '登陆过期，请重新登陆'
         }
     }
