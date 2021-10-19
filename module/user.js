@@ -2,7 +2,7 @@ module.exports = function(sequelize,DataTypes){
   return sequelize.define(
       'user',
       {
-          userId:{
+          id:{
               type: DataTypes.STRING,
               primaryKey: true,
               allowNull: true,

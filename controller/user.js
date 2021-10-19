@@ -24,7 +24,7 @@ const uuid = require('node-uuid');
 class userModule {
     static async userRegist(data) {
         return await user.create({
-          userId: uuid.v1(),
+          id: uuid.v1(),
           password: data.password,
           mobileNo: data.mobileNo
         })
@@ -40,10 +40,10 @@ class userModule {
             }
         })
     }
-    static async getUserById(userId) {
+    static async getUserById(id) {
         return await user.findOne({
             where: {
-                userId
+                id
             }
         })
     }
@@ -92,14 +92,14 @@ class userController {
   //修改资料
   static async update(ctx) {
     const req = ctx.request.body;
-    if (req.userId) {
+    if (req.id) {
         try {
-            const query = await userModule.getUserById(req.userId);
+            const query = await userModule.getUserById(req.id);
             Object.keys(req).forEach(key => {
                 query[key] = req[key]
             })
             await userModule.userUpdate(query)
-            let data = await userModule.getUserById(req.userId)
+            let data = await userModule.getUserById(req.id)
             ctx.response.status = 200;
             ctx.body = {
                 code: 1,
