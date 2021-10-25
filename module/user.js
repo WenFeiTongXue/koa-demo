@@ -36,10 +36,10 @@ module.exports = function (sequelize, DataTypes) {
                 type: DataTypes.DATE,
                 field: 'updatedAt'
             },
-            roles: {
-                type: DataTypes.STRING,
-                field: 'roles',
-                defaultValue: "user"
+            status: {
+                type: DataTypes.INTEGER(1),
+                field: 'status',
+                defaultValue: "1"
             }
         }, {
             timestamps: true

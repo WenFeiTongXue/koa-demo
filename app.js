@@ -9,6 +9,7 @@ const cors = require('koa-cors')
 
 const index = require('./routes/index')
 const users = require('./routes/users')
+const roles = require('./routes/roles')
 
 const koajwt = require('koa-jwt')
 
@@ -59,6 +60,7 @@ app.use(koajwt({
 // routes
 app.use(index.routes(), index.allowedMethods())
 app.use(users.routes(), users.allowedMethods())
+app.use(roles.routes(), roles.allowedMethods())
 
 // error-handling
 app.on('error', (err, ctx) => {
