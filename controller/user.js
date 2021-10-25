@@ -38,33 +38,33 @@ class userModule {
     }
 
     static async getUserInfo(mobileNo) {
-        user.hasMany(userRole,{
-            as: 'role',      //将关联的数据显示到该字段上
-            foreginkey:"id",  //关联的外键
-            targetKey: 'userId',
+        user.belongsToMany(role,{
+            // as: 'role',      //将关联的数据显示到该字段上
+            // foreginkey:"id",  //关联的外键
+            // targetKey: 'userId',
+            through: userRole
         })
-        userRole.belongsTo(role, {
+        role.belongsToMany(user, {
             // targetKey: 'id',
             // foreginkey:"roleId",
-            through: { attributes: [] },
-
+            through: userRole,
         })
         return await user.findOne({
+            where: {
+                mobileNo
+            },
             include:[{
-                model:userRole,
-                as: 'role',
-                attributes: ['userId'],
-                include:[{
-                    model:role,
-                    attributes: ['id', 'name']
-                }]
+                model:role,
+                // as: 'role',
+                // attributes: [['id','roleId'], ['name','roleName']],
+                // through: {attributes: []}
             }]
         })
     }
-    static async getUserById(id) {
+    static async getUserById(userId) {
         return await user.findOne({
             where: {
-                id
+                id:userId
             }
         })
     }
@@ -140,14 +140,14 @@ class userController {
   //修改资料
   static async update(ctx) {
     const req = ctx.request.body;
-    if (req.id) {
+    if (req.userId) {
         try {
-            const query = await userModule.getUserById(req.id);
+            const query = await userModule.getUserById(req.userId);
             Object.keys(req).forEach(key => {
                 query[key] = req[key]
             })
             await userModule.userUpdate(query)
-            let data = await userModule.getUserById(req.id)
+            let data = await userModule.getUserById(req.userId)
             ctx.response.status = 200;
             ctx.body = {
                 code: 1,
@@ -173,6 +173,7 @@ class userController {
         }
     } else {
         const data = await userModule.getUserInfo(req.mobileNo);
+        console.log(data)
         if (data) {
             if (data.password === req.password) {
                 //生成token，验证登录有效期

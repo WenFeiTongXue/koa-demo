@@ -8,11 +8,11 @@ module.exports = function (sequelize, DataTypes) {
             },
             userId: {
                 type: DataTypes.STRING(64),
-                allowNull: true,
+                // allowNull: true,
             },
             roleId: {
                 type: DataTypes.STRING(64),
-                allowNull: true,
+                // allowNull: true,
             },
             createdAt: {
                 type: DataTypes.DATE,
