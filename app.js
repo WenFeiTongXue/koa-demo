@@ -54,7 +54,7 @@ app.use(async (ctx, next) => {
 app.use(koajwt({
   secret: 'wenfei'
 }).unless({
-  path: [/^\/user\/regist/,/^\/user\/login/]
+path: [/^\/user\/regist/,/^\/user\/login/,/^\/role\/*/]
 }))
 
 // routes

@@ -10,9 +10,15 @@ const role = Sequelize.import('../module/role')
 const userRole = Sequelize.import('../module/userRole')
 //自动创建表
 // user.sync({ force: false }); 
-user.sync({ alter: true }); 
-role.sync({ alter: true }); 
-userRole.sync({ alter: true }); 
+user.sync({
+    alter: true
+});
+role.sync({
+    alter: true
+});
+userRole.sync({
+    alter: true
+});
 
 //引入jwt做token验证
 const jwt = require('jsonwebtoken')
@@ -28,9 +34,9 @@ const uuid = require('node-uuid');
 class userModule {
     static async userRegist(data) {
         return await user.create({
-          id: uuid.v1(),
-          password: data.password,
-          mobileNo: data.mobileNo
+            id: uuid.v1(),
+            password: data.password,
+            mobileNo: data.mobileNo
         })
     }
     static async userUpdate(obj) {
@@ -38,7 +44,7 @@ class userModule {
     }
 
     static async getUserInfo(mobileNo) {
-        user.belongsToMany(role,{
+        user.belongsToMany(role, {
             // as: 'role',      //将关联的数据显示到该字段上
             // foreginkey:"id",  //关联的外键
             // targetKey: 'userId',
@@ -53,18 +59,23 @@ class userModule {
             where: {
                 mobileNo
             },
-            include:[{
-                model:role,
+            include: [{
+                model: role,
                 // as: 'role',
-                // attributes: [['id','roleId'], ['name','roleName']],
-                // through: {attributes: []}
+                attributes: [
+                    ['id', 'roleId'],
+                    ['name', 'roleName']
+                ],
+                through: {
+                    attributes: []
+                }
             }]
         })
     }
     static async getUserById(userId) {
         return await user.findOne({
             where: {
-                id:userId
+                id: userId
             }
         })
     }
@@ -73,8 +84,8 @@ class userModule {
 class roleModule {
     static async createRole(data) {
         return await role.create({
-          id: uuid.v1(),
-          name: data.name
+            id: uuid.v1(),
+            name: data.name
         })
     }
     static async updateRole(obj) {
@@ -95,151 +106,160 @@ class roleModule {
             }
         })
     }
+    static async hasRole(userId) {
+        return await userRole.findAll({
+            where: {
+                userId
+            }
+        })
+    }
 }
 
 //功能处理
 class userController {
-  static async create(ctx) {
-    const req = ctx.request.body;
-    if (req.mobileNo && req.password) {
-        try {
-            const query = await userModule.getUserInfo(req.mobileNo);
-            if (query) {
-                ctx.response.status = 200;
-                ctx.body = {
-                    code: -1,
-                    desc: '用户已存在'
-                }
-            } else {
-                const param = {
-                    password: req.password,
-                    mobileNo: req.mobileNo,
-                    userName: req.mobileNo
-                }
-                const data = await userModule.userRegist(param);
+    static async create(ctx) {
+        const req = ctx.request.body;
+        if (req.mobileNo && req.password) {
+            try {
+                const query = await userModule.getUserInfo(req.mobileNo);
+                if (query) {
+                    ctx.response.status = 200;
+                    ctx.body = {
+                        code: -1,
+                        desc: '用户已存在'
+                    }
+                } else {
+                    const param = {
+                        password: req.password,
+                        mobileNo: req.mobileNo,
+                        userName: req.mobileNo
+                    }
+                    const data = await userModule.userRegist(param);
 
-                ctx.response.status = 200;
-                ctx.body = {
-                    code: 0,
-                    desc: '用户注册成功',
-                    userInfo: {
-                        mobileNo: req.mobileNo
+                    ctx.response.status = 200;
+                    ctx.body = {
+                        code: 0,
+                        desc: '用户注册成功',
+                        userInfo: {
+                            mobileNo: req.mobileNo
+                        }
                     }
                 }
-            }
 
-        } catch (error) {
-            ctx.response.status = 416;
-            ctx.body = {
-                code: -1,
-                desc: '参数不齐全'
+            } catch (error) {
+                ctx.response.status = 416;
+                ctx.body = {
+                    code: -1,
+                    desc: '参数不齐全'
+                }
             }
         }
     }
-  }
-  //修改资料
-  static async update(ctx) {
-    const req = ctx.request.body;
-    if (req.userId) {
-        try {
-            const query = await userModule.getUserById(req.userId);
-            Object.keys(req).forEach(key => {
-                query[key] = req[key]
-            })
-            await userModule.userUpdate(query)
-            let data = await userModule.getUserById(req.userId)
-            ctx.response.status = 200;
-            ctx.body = {
-                code: 1,
-                desc: '更新成功',
-                userInfo: data.dataValues
-            }
-        } catch (error) {
-            ctx.response.status = 416;
-            ctx.body = {
-                code: -1,
-                desc: '参数不齐全'
+    //修改资料
+    static async update(ctx) {
+        const req = ctx.request.body;
+        if (req.userId) {
+            try {
+                const query = await userModule.getUserById(req.userId);
+                Object.keys(req).forEach(key => {
+                    query[key] = req[key]
+                })
+                await userModule.userUpdate(query)
+                let data = await userModule.getUserById(req.userId)
+                ctx.response.status = 200;
+                ctx.body = {
+                    code: 1,
+                    desc: '更新成功',
+                    userInfo: data.dataValues
+                }
+            } catch (error) {
+                ctx.response.status = 416;
+                ctx.body = {
+                    code: -1,
+                    desc: '参数不齐全'
+                }
             }
         }
     }
-  }
-  //密码登陆
-  static async login(ctx) {
-    const req = ctx.request.body;
-    if (!req.mobileNo || !req.password) {
-        return ctx.body = {
-            code: '-1',
-            msg: '用户名或密码不能为空'
-        }
-    } else {
-        const data = await userModule.getUserInfo(req.mobileNo);
-        console.log(data)
-        if (data) {
-            if (data.password === req.password) {
-                //生成token，验证登录有效期
-                const token = jwt.sign({
-                    user: req.mobileNo,
-                    passWord: req.password
-                }, 'wenfei', { expiresIn: expireTime });
-                const info = data.dataValues
-                return ctx.body = {
-                    code: '0',
-                    token: token,
-                    userInfo: info,
-                    desc: '登陆成功'
+    //密码登陆
+    static async login(ctx) {
+        const req = ctx.request.body;
+        if (!req.mobileNo || !req.password) {
+            return ctx.body = {
+                code: '-1',
+                msg: '用户名或密码不能为空'
+            }
+        } else {
+            const data = await userModule.getUserInfo(req.mobileNo);
+            console.log(data)
+            if (data) {
+                if (data.password === req.password) {
+                    //生成token，验证登录有效期
+                    const token = jwt.sign({
+                        user: req.mobileNo,
+                        passWord: req.password
+                    }, 'wenfei', {
+                        expiresIn: expireTime
+                    });
+                    const info = data.dataValues
+                    return ctx.body = {
+                        code: '0',
+                        token: token,
+                        userInfo: info,
+                        desc: '登陆成功'
+                    }
+                } else {
+                    return ctx.body = {
+                        code: '-1',
+                        desc: '用户密码错误'
+                    }
                 }
             } else {
                 return ctx.body = {
                     code: '-1',
-                    desc: '用户密码错误'
+                    desc: '该用户尚未注册'
+                }
+            }
+        };
+    }
+    //获取用户信息(除密码外)
+    static async getUserInfo(ctx) {
+        const req = ctx.request.body;
+        const token = ctx.headers.authorization;
+        if (token) {
+            try {
+                const result = await tools.verToken(token);
+                if (!req.mobileNo) {
+                    return ctx.body = {
+                        code: '-1',
+                        desc: '参数错误'
+                    }
+                } else {
+                    let data = await userModule.getUserInfo(req.mobileNo);
+                    if (req.mobileNo == data.mobileNo) {
+                        const info = data.dataValues;
+                        return ctx.body = {
+                            code: '0',
+                            userInfo: info,
+                            desc: '获取用户信息成功'
+                        }
+                    }
+                }
+            } catch (error) {
+                ctx.status = 401;
+                return ctx.body = {
+                    code: '401',
+                    desc: '登陆过期，请重新登陆'
                 }
             }
         } else {
-            return ctx.body = {
-                code: '-1',
-                desc: '该用户尚未注册'
-            }
-        }
-    };
-  }
-  //获取用户信息(除密码外)
-  static async getUserInfo(ctx){
-    const req = ctx.request.body;
-    const token = ctx.headers.authorization;
-    if(token){
-        try {
-            const result = await tools.verToken(token);
-            if (!req.mobileNo) {
-                return ctx.body = {
-                    code: '-1',
-                    desc: '参数错误'
-                }
-            } else {
-                let data = await userModule.getUserInfo(req.mobileNo);
-                if (req.mobileNo == data.mobileNo) {
-                    const info = data.dataValues;
-                    return ctx.body = {
-                        code: '0',
-                        userInfo: info,
-                        desc: '获取用户信息成功'
-                    }
-                }
-            }
-        } catch (error) {
             ctx.status = 401;
             return ctx.body = {
                 code: '401',
                 desc: '登陆过期，请重新登陆'
             }
         }
-    }else{
-        ctx.status = 401;
-        return ctx.body = {
-            code: '401',
-            desc: '登陆过期，请重新登陆'
-        }
     }
-  }
 }
 class roleController {
     static async create(ctx) {
@@ -278,68 +298,130 @@ class roleController {
     }
     //修改资料
     static async update(ctx) {
-    const req = ctx.request.body;
-    if (req.id) {
-        try {
-            const query = await roleModule.getRoleInfoById(req.id);
-            Object.keys(req).forEach(key => {
-                query[key] = req[key]
-            })
-            await roleModule.updateRole(query)
-            let data = await roleModule.getRoleInfoById(req.id)
-            ctx.response.status = 200;
-            ctx.body = {
-                code: 1,
-                desc: '更新成功',
-                userInfo: data.dataValues
-            }
-        } catch (error) {
-            ctx.response.status = 416;
-            ctx.body = {
-                code: -1,
-                desc: '参数不齐全'
+        const req = ctx.request.body;
+        if (req.id) {
+            try {
+                const query = await roleModule.getRoleInfoById(req.id);
+                Object.keys(req).forEach(key => {
+                    query[key] = req[key]
+                })
+                await roleModule.updateRole(query)
+                let data = await roleModule.getRoleInfoById(req.id)
+                ctx.response.status = 200;
+                ctx.body = {
+                    code: 1,
+                    desc: '更新成功',
+                    userInfo: data.dataValues
+                }
+            } catch (error) {
+                ctx.response.status = 416;
+                ctx.body = {
+                    code: -1,
+                    desc: '参数不齐全'
+                }
             }
         }
     }
-    }
     //获取用户信息(除密码外)
-    static async getRoleInfo(ctx){
-    const req = ctx.request.body;
-    const token = ctx.headers.authorization;
-    if(token){
-        try {
-            const result = await tools.verToken(token);
-            if (!req.id) {
-                return ctx.body = {
-                    code: '-1',
-                    desc: '参数错误'
-                }
-            } else {
-                let data = await roleModule.getRoleInfoById(req.id);
-                if (req.id == data.id) {
-                    const info = data.dataValues;
+    static async getRoleInfo(ctx) {
+        const req = ctx.request.body;
+        const token = ctx.headers.authorization;
+        if (token) {
+            try {
+                const result = await tools.verToken(token);
+                if (!req.id) {
                     return ctx.body = {
-                        code: '0',
-                        data: info,
-                        desc: '获取用户信息成功'
+                        code: '-1',
+                        desc: '参数错误'
+                    }
+                } else {
+                    let data = await roleModule.getRoleInfoById(req.id);
+                    if (req.id == data.id) {
+                        const info = data.dataValues;
+                        return ctx.body = {
+                            code: '0',
+                            data: info,
+                            desc: '获取用户信息成功'
+                        }
                     }
                 }
+            } catch (error) {
+                ctx.status = 401;
+                return ctx.body = {
+                    code: '401',
+                    desc: '登陆过期，请重新登陆'
+                }
             }
-        } catch (error) {
+        } else {
             ctx.status = 401;
             return ctx.body = {
                 code: '401',
                 desc: '登陆过期，请重新登陆'
             }
         }
-    }else{
-        ctx.status = 401;
-        return ctx.body = {
-            code: '401',
-            desc: '登陆过期，请重新登陆'
-        }
     }
+    //设置用户权限
+    static async setRole(ctx) {
+        const req = ctx.request.body;
+        const token = ctx.headers.authorization;
+        if (token) {
+            try {
+                const result = await tools.verToken(token);
+                if ((!req.userId) || (!req.roleId)) {
+                    return ctx.body = {
+                        code: '-1',
+                        desc: '参数错误'
+                    }
+                } else {
+                    user.belongsToMany(role, {
+                        // as: 'role',      //将关联的数据显示到该字段上
+                        // foreginkey:"id",  //关联的外键
+                        // targetKey: 'userId',
+                        through: userRole
+                    })
+                    role.belongsToMany(user, {
+                        // targetKey: 'id',
+                        // foreginkey:"roleId",
+                        through: userRole,
+                    })
+                    let hasRole = await roleModule.hasRole(req.userId)
+                    if (hasRole.some(item => item.roleId == req.roleId)) {
+                        return ctx.body = {
+                            code: '400',
+                            desc: '用户已存在该权限!',
+                        }
+                    }
+                    let checkUser = await userModule.getUserById(req.userId);
+                    let checkRole = await roleModule.getRoleInfoById(req.roleId)
+                    await checkUser.addRoles([checkRole],{
+                        through: {
+                            id: uuid.v1()
+                        }
+                    })
+                    let data = await userModule.getUserById(req.userId)
+                    return ctx.body = {
+                        code: '200',
+                        desc: '权限设置成功!',
+                    }
+                }
+            } catch (error) {
+                ctx.status = 401;
+                return ctx.body = {
+                    code: '401',
+                    desc: '登陆过期，请重新登陆'
+                }
+            }
+        } else {
+            ctx.status = 401;
+            return ctx.body = {
+                code: '401',
+                desc: '登陆过期，请重新登陆'
+            }
+        }
     }
 }
 
-module.exports = {userController,roleController};
+module.exports = {
+    userController,
+    roleController
+};

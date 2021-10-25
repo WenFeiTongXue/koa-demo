@@ -10,6 +10,7 @@ router.post('/create',roleController.create)
 
 //获取用户信息
 router.post('/getRoleInfo',roleController.getRoleInfo)
+router.post('/setRole',roleController.setRole)
 
 //修改
 router.post('/update',roleController.update)
